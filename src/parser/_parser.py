@@ -1,15 +1,14 @@
-import os
 import trafilatura
 import requests
 
 from requests import Timeout, RequestException
 from requests.auth import HTTPProxyAuth
 from typing import Tuple, Optional
-from selenium import webdriver
 
 from configs.app import AppConfig
 from .parser_result import ParserResult
 from .proxy_parser import ProxyParser
+from .selenium_parser import SeleniumParser
 
 
 class Parser(ProxyParser):
@@ -69,13 +68,11 @@ class Parser(ProxyParser):
             if self._use_proxy and self._is_valid_proxy:
                 # create session
                 with requests.Session() as session:
-                    print('\nCreating session')
-
                     session.proxies = {
                        'http': f"http://{self.proxy['host']}:{self.proxy['port']}",
                        'https': f"https://{self.proxy['host']}:{self.proxy['port']}"
                     }
-                    print(f"{self.proxy['host']}:{self.proxy['port']}")
+
                     if self._with_auth:
                         session.auth = HTTPProxyAuth(self.proxy['username'], self.proxy['password'])
 
@@ -88,33 +85,21 @@ class Parser(ProxyParser):
             else:
                 response = requests.get(url=self.url, headers=self.headers, timeout=self.timeout)
         except (ConnectionError, RequestException, Timeout) as error:
-            return False, 'Exception: ' + str(error)
+            return False, '[Request] ' + str(error)
 
         # check response
         if response.status_code == requests.codes.OK:
-            with open('res_req.html', 'w') as f:
-                f.write(response.text)
             return True, response.text
         else:
             return False, str(response.status_code)
 
     def __parse_from_selenium(self) -> Tuple[bool, str]:
-        print('Start parsing browser')
-        browser_options = webdriver.FirefoxOptions()
-        browser_options.add_argument('--headless')
-        browser_options.add_argument('--disable-gpu')
-        browser_options.add_argument('--no-sandbox')
-
-        browser = webdriver.Firefox(executable_path='docker/workspace/webdriver/geckodriver', options=browser_options,
-                                    service_log_path=os.devnull)
-
+        """
+        Getting html from request
+        :return: tuple with status code and result
+        """
+        selenium_parser = SeleniumParser(proxy=self.proxy, timeout=self.timeout)
         try:
-            browser.get(self.url)
+            return True, selenium_parser.get_html(self.url)
         except Exception as error:
-            browser.close()
-            return False, str(error)
-
-        source = browser.page_source
-        browser.close()
-
-        return True, source
+            return False, '[Selenium] ' + str(error)

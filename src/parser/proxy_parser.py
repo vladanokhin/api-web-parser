@@ -47,8 +47,10 @@ class ProxyParser:
         set_keys = set(proxy.keys())
         if {'username', 'password'}.issubset(set_keys):
             available_keys = ('host', 'port', 'username', 'password')
+            self._with_auth = True
         else:
             available_keys = ('host', 'port')
+            self._with_auth = False
 
         # check that have all the required keys
         if not set(available_keys).issubset(set_keys):
@@ -68,3 +70,16 @@ class ProxyParser:
         self._is_valid_proxy = True
 
         return True
+
+    def get_one_line(self) -> str:
+        """
+        Get one line of proxy
+        :return: String with proxy
+        """
+        if not self._use_proxy or not self._is_valid_proxy:
+            return ''
+
+        if self._with_auth:
+            return f"{self.proxy['username']}:{self.proxy['password']}@{self.proxy['host']}:{self.proxy['port']}"
+        else:
+            return f"{self.proxy['host']}:{self.proxy['port']}"

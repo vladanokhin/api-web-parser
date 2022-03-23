@@ -17,8 +17,8 @@ class ParserConfig:
     METHOD_OF_PARSE = ('request', 'selenium')  # first value always default
 
     PROXY = {
-        "host": "http://10ddd3.159.47.18",
-        "port": "82"
+        "host": "50.250.75.153",
+        "port": "39593"
         # "username": "",
         # "password": ""
     }
