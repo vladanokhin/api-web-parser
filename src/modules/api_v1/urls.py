@@ -6,4 +6,4 @@ from src.modules.api_v1.classes.ConvertApi import ConvertApi
 
 def url_mapping(api: Api) -> None:
     api.add_resource(ParserApi, ParserApi.URL)
-    api.add_resource(ConvertApi, '/api/v1/convert')
+    api.add_resource(ConvertApi, ConvertApi.URL)

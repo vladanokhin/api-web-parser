@@ -2,8 +2,8 @@ import os
 
 from pathlib import Path
 
-from configs.api_v1 import ApiConfigV1
-from configs.parser import ParserConfig
+from .api_v1_conf import ApiConfigV1
+from .parser_conf import ParserConfig
 
 
 class AppConfig(ApiConfigV1, ParserConfig):
@@ -15,8 +15,6 @@ class AppConfig(ApiConfigV1, ParserConfig):
     FLASK_ENV = os.getenv('FLASK_ENV', 'development')
 
     SECRET_KEY = os.getenv('SECRET_KEY')
-
-    TEMP_DIR = Path(BASE_PATH, 'temp/')  # folder for temporary files
 
 
 class ProductionConfig(AppConfig):

@@ -1,7 +1,7 @@
 import json
 from typing import Union, Dict
 
-from configs.app import AppConfig
+from configs import AppConfig
 
 
 class ProxyParser:

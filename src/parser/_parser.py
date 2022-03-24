@@ -1,39 +1,55 @@
-import trafilatura
 import requests
 
 from requests import Timeout, RequestException
 from requests.auth import HTTPProxyAuth
-from typing import Tuple, Optional
-from pathlib import Path
+from typing import Tuple, Optional, Union, Dict
 
-from src.helpers import create_file_name, create_dirs
-from configs.app import AppConfig
+from configs import AppConfig
+from src.convertor import Convertor
+from src.helpers import extract_content_from_html
 from .parser_result import ParserResult
 from .proxy_parser import ProxyParser
 from .selenium_parser import SeleniumParser
 
 
 class Parser(ProxyParser):
+    """
+    Parse web page
+    """
 
-    def __init__(self, url: str, timeout: Optional[int], method_parse: str, **kwargs) -> None:
+    def __init__(self, url: str,
+                 timeout: Optional[int],
+                 method_parse: str,
+                 with_metadata: bool,
+                 auto_convert_to_md: bool,
+                 proxy: Union[Dict[str, str], str]
+                 ) -> None:
+
         self.cfg = AppConfig()
         self.url = url
         self.timeout = timeout or self.cfg.REQUEST_TIMEOUT
         self.method_parse = method_parse
-        self.last_file_result = None
-        self.temp_dir_xml = Path(self.cfg.TEMP_DIR, self.cfg.TEMP_DIR_XML)  # folder for temporary xml file
+        self.with_metadata = with_metadata
+        self.auto_convert_to_md = auto_convert_to_md
         self.headers = {'user-agent': self.cfg.USER_AGENT}
 
-        create_dirs(self.temp_dir_xml)
-        super().__init__(**kwargs)
+        super().__init__(proxy)
 
     def parse(self) -> ParserResult:
+        """
+        Start parsing web page
+        """
         if self.method_parse == 'request':
             return self.__extract_content(self.__parse_from_request)
         elif self.method_parse == 'selenium':
             return self.__extract_content(self.__parse_from_selenium)
 
     def __extract_content(self, extract_method) -> ParserResult:
+        """
+        Extract content from html to xml
+        :param extract_method: method to get html
+        :return: ParserResult
+        """
         result = ParserResult()
         is_success, content = extract_method()
 
@@ -42,24 +58,17 @@ class Parser(ProxyParser):
             return result
 
         try:
-            result.content = trafilatura.extract(
-                filecontent=content,
-                # xml_output=self.cfg.XML_OUTPUT,
-                output_format=self.cfg.OUTPUT_FORMAT,
-                include_comments=self.cfg.INCLUDE_COMMENTS,
-                include_tables=self.cfg.INCLUDE_TABLES,
-                deduplicate=self.cfg.DEDUPLICATE,
-            )
-            result.metadata = trafilatura.metadata.extract_metadata(filecontent=content, default_url=self.url)
+            result.metadata, result.content = extract_content_from_html(content, self.with_metadata)
         except Exception as err:
-            result.error = str(err)
+            result.error = '[Extract] ' + str(err)
         else:
             result.success = True
 
         if not result.content:
             result.success = False
-        else:
-            self.__save_parse_result(result)
+        elif result.content and self.auto_convert_to_md:
+            convertor = Convertor()
+            result.content = convertor.convert(result.content)
 
         return result
 
@@ -108,23 +117,3 @@ class Parser(ProxyParser):
             return True, selenium_parser.get_html(self.url)
         except Exception as error:
             return False, '[Selenium] ' + str(error)
-
-    def __save_parse_result(self, result_parse: ParserResult) -> bool:
-        """
-        Save content after parsing in
-        temporary folder
-        :return: bool
-        """
-        try:
-            file_name = create_file_name(self.url)
-            new_path_to_file = Path(self.temp_dir_xml, file_name)
-
-            with open(new_path_to_file, 'w') as file:
-                file.write(result_parse.content)
-
-            self.last_file_result = file_name
-            return True
-
-        except Exception:
-            self.last_file_result = None
-            return False

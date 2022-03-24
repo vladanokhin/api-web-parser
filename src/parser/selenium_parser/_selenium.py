@@ -11,7 +11,10 @@ from ..proxy_parser import ProxyParser
 
 
 class SeleniumParser(ProxyParser):
-
+    """
+    Class for parsing web page by a Selenium.
+    Browser: Firefox
+    """
     def __init__(self,  proxy: Union[Dict[str, str], str, None], timeout: Optional[int]):
         super().__init__(proxy)
 
@@ -26,7 +29,6 @@ class SeleniumParser(ProxyParser):
         self.__started = False
 
         self.__setup_and_start()
-
 
     def __setup_and_start(self) -> None:
         """

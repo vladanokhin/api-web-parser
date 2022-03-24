@@ -1,27 +1,30 @@
-import re
+import trafilatura
 
 from functools import wraps
-from hashlib import blake2b
-from pathlib import Path
-from urllib.parse import urlparse
+from typing import Tuple, Any
+
+from src.class_result import BaseResult
+from configs import AppConfig
 
 
 def api_result(function):
     """
-    Decorator: create json response for api
+    Decorator: create json response for api requests
     """
-    def wrapper(*args, **kwargs):
+    @wraps(function)
+    def wrapper(self, *args, **kwargs):
         try:
-            result = function(*args, **kwargs)
-
+            result = function(self, *args, **kwargs)
             if result is None:
                 return {'status': 'error', 'message': 'Undefined result'}
-            elif result.success:
-                return {'status': 'success', 'result': result.content}
-            else:
-                return {'status': 'error', 'message': result.error}
+
+            if isinstance(result, BaseResult):
+                if result.success:
+                    return {'status': 'success', 'result': result.content}
+                else:
+                    return {'status': 'error', 'message': result.error}
         except Exception as error:
-            return {'status': 'error', 'message': '[API] ' + str(error)}
+            return {'status': 'error', 'message': f'[{self.__class__.__name__}] ' + str(error)}
 
     return wrapper
 
@@ -39,31 +42,25 @@ def auto_close_browser(function):
     return _close
 
 
-def create_file_name(url: str, file_ext: str = 'xml') -> str:
+def extract_content_from_html(content: str, with_metadata: bool) -> Tuple[Any, str]:
     """
-    Create file name from url
-    :param url: link to website
-    :param file_ext: file extension, default 'xml'
-    :return: new string of file name
+    Extract content from html text
+    :param content: html text
+    :param with_metadata: is it also necessary to extract metadata
+    :return: Tuple with metadata and content
     """
-    _hex = blake2b(digest_size=8)
-    _hex.update(url.encode())
-    url_hex = _hex.hexdigest()
+    cfg = AppConfig()
+    metadata = None
 
-    if '://' not in url and not url.startswith('/'):
-        url = '//' + url  # adding "//" to correctly parse url using method: urlparse()
+    content = trafilatura.extract(
+        filecontent=content,
+        output_format=cfg.OUTPUT_FORMAT,
+        include_comments=cfg.INCLUDE_COMMENTS,
+        include_tables=cfg.INCLUDE_TABLES,
+        deduplicate=cfg.DEDUPLICATE,
+    )
 
-    url = re.sub(r'^http\w?|[\W_]+', '', url)  # Remove all characters except letters and numbers
-    url = urlparse(url, allow_fragments=False)
+    if with_metadata:
+        metadata = trafilatura.metadata.extract_metadata(filecontent=content)
 
-    return f'{url.netloc}{url.path}-{url_hex}.{file_ext}'
-
-
-def create_dirs(*dirs: str) -> None:
-    """
-    Creating dir if this not exists
-    :param dirs: path to dir
-    """
-    for directory in dirs:
-        if not Path(directory).exists():
-            Path(directory).mkdir()
+    return metadata, content

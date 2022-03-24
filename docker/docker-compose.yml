@@ -7,7 +7,7 @@ services:
       dockerfile: Dockerfile
     env_file:
       - .env
-    restart: always #unless-stopped
+    restart: unless-stopped
     volumes:
       - ../:/var/www/html/
     container_name: workspace
