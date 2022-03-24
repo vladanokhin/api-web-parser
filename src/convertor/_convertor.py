@@ -1,12 +1,17 @@
-from typing import List, Any, Optional, OrderedDict, Dict
-
 from xmljson import Cobra
 from xml.etree.ElementTree import fromstring, ParseError
+from typing import List, Any, Optional, OrderedDict, Dict
+
+from configs import AppConfig
 
 
-class Converter:
+class Convertor:
+    """
+    Class for converting from xml to md
+    """
 
     def __init__(self) -> None:
+        self.cfg = AppConfig()
         self.cobra = Cobra(dict_type=dict, invalid_tags='drop')
 
     def remove_attributes(self, xml_element: List[Dict[str, Any]]) -> None:
@@ -63,17 +68,6 @@ class Converter:
         return ''.join(text)
 
     @staticmethod
-    def read_txt(filename: str) -> str:
-        with open(filename) as file:
-            content = file.read()
-        return content
-
-    @staticmethod
-    def save_md(text: str, filename: str) -> None:
-        with open(file=filename, mode='w+') as file:
-            file.write(text)
-
-    @staticmethod
     def get_attribute(data: dict, attribute_name: str) -> str:
         try:
             attr: str = data['doc']['attributes'][attribute_name]
@@ -81,14 +75,13 @@ class Converter:
             attr = ''
         return attr
 
-    @staticmethod
-    def read_file(filename: str) -> str:
-        with open(file=filename, mode='r') as file:
-            content: str = file.read()
-        return content
-
-    def convert(self, filename: str) -> Optional[str]:
-        xml_content = self.read_file(filename=filename)
+    def convert(self, xml_text: str) -> Optional[str]:
+        """
+        Conver xml text to md
+        :param xml_text: xml text
+        :return: md text or None
+        """
+        xml_content = xml_text
         xml_content = xml_content.replace("<div>", "").replace("</div>", "")
 
         try:
@@ -104,6 +97,6 @@ class Converter:
             return None
 
         self.remove_attributes(xml_element=root)
-        text = self.search_elements(xml_element=root, title=title, min_len=3)
-        if text:
-            return text
+        text = self.search_elements(xml_element=root, title=title, min_len=1)
+
+        return text
