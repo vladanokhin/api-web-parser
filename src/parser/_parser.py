@@ -4,7 +4,9 @@ import requests
 from requests import Timeout, RequestException
 from requests.auth import HTTPProxyAuth
 from typing import Tuple, Optional
+from pathlib import Path
 
+from src.helpers import create_file_name
 from configs.app import AppConfig
 from .parser_result import ParserResult
 from .proxy_parser import ProxyParser
@@ -19,7 +21,7 @@ class Parser(ProxyParser):
         self.url = url
         self.timeout = timeout or self.cfg.REQUEST_TIMEOUT
         self.method_parse = method_parse
-
+        self.temp_dir_xml = Path(self.cfg.TEMP_DIR, self.cfg.TEMP_DIR_XML)  # folder for temporary xml file
         self.headers = {'user-agent': self.cfg.USER_AGENT}
 
         super().__init__(**kwargs)
@@ -55,6 +57,8 @@ class Parser(ProxyParser):
 
         if not result.content:
             result.success = False
+        else:
+            self.__save_parse_result(result)
 
         return result
 
@@ -103,3 +107,17 @@ class Parser(ProxyParser):
             return True, selenium_parser.get_html(self.url)
         except Exception as error:
             return False, '[Selenium] ' + str(error)
+
+    def __save_parse_result(self, result_parse: ParserResult) -> bool:
+        """
+        Save content after parsing in
+        temporary folder
+        :return: bool
+        """
+        file_name = create_file_name(self.url)
+        new_path_to_file = Path(self.temp_dir_xml, file_name)
+
+        with open(new_path_to_file, 'w') as file:
+            file.write(result_parse.content)
+
+        return True

@@ -1,6 +1,7 @@
 import os
 from flask import Flask
 
+from src.helpers import create_dirs
 from src.modules.api_v1 import init_api_v1
 
 
@@ -19,6 +20,7 @@ def create_app() -> Flask:
 
     init_api_v1(_app)  # initialization module Api v.1
 
+    create_dirs()
     return _app
 
 
