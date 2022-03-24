@@ -3,7 +3,6 @@ import re
 from functools import wraps
 from hashlib import blake2b
 from pathlib import Path
-from typing import Optional
 from urllib.parse import urlparse
 
 
@@ -60,7 +59,11 @@ def create_file_name(url: str, file_ext: str = 'xml') -> str:
     return f'{url.netloc}{url.path}-{url_hex}.{file_ext}'
 
 
-def create_dirs(*dirs) -> None:
+def create_dirs(*dirs: str) -> None:
+    """
+    Creating dir if this not exists
+    :param dirs: path to dir
+    """
     for directory in dirs:
         if not Path(directory).exists():
             Path(directory).mkdir()

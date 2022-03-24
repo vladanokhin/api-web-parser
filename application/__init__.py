@@ -20,7 +20,8 @@ def create_app() -> Flask:
 
     init_api_v1(_app)  # initialization module Api v.1
 
-    create_dirs()
+    create_dirs(_app.config['TEMP_DIR'])
+
     return _app
 
 

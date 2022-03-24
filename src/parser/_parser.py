@@ -6,7 +6,7 @@ from requests.auth import HTTPProxyAuth
 from typing import Tuple, Optional
 from pathlib import Path
 
-from src.helpers import create_file_name
+from src.helpers import create_file_name, create_dirs
 from configs.app import AppConfig
 from .parser_result import ParserResult
 from .proxy_parser import ProxyParser
@@ -17,13 +17,14 @@ class Parser(ProxyParser):
 
     def __init__(self, url: str, timeout: Optional[int], method_parse: str, **kwargs) -> None:
         self.cfg = AppConfig()
-
         self.url = url
         self.timeout = timeout or self.cfg.REQUEST_TIMEOUT
         self.method_parse = method_parse
+        self.last_file_result = None
         self.temp_dir_xml = Path(self.cfg.TEMP_DIR, self.cfg.TEMP_DIR_XML)  # folder for temporary xml file
         self.headers = {'user-agent': self.cfg.USER_AGENT}
 
+        create_dirs(self.temp_dir_xml)
         super().__init__(**kwargs)
 
     def parse(self) -> ParserResult:
@@ -114,10 +115,16 @@ class Parser(ProxyParser):
         temporary folder
         :return: bool
         """
-        file_name = create_file_name(self.url)
-        new_path_to_file = Path(self.temp_dir_xml, file_name)
+        try:
+            file_name = create_file_name(self.url)
+            new_path_to_file = Path(self.temp_dir_xml, file_name)
 
-        with open(new_path_to_file, 'w') as file:
-            file.write(result_parse.content)
+            with open(new_path_to_file, 'w') as file:
+                file.write(result_parse.content)
 
-        return True
+            self.last_file_result = file_name
+            return True
+
+        except Exception:
+            self.last_file_result = None
+            return False
