@@ -59,8 +59,8 @@ class Parser(ProxyParser):
 
         try:
             result.metadata, result.content = extract_content_from_html(content, self.with_metadata)
-        except Exception as err:
-            result.error = '[Extract] ' + str(err)
+        except Exception:
+            result.error = '[Extract] Cannot extract content from html'
         else:
             result.success = True
 
@@ -98,8 +98,8 @@ class Parser(ProxyParser):
             # WITHOUT PROXY
             else:
                 response = requests.get(url=self.url, headers=self.headers, timeout=self.timeout)
-        except (ConnectionError, RequestException, Timeout) as error:
-            return False, '[Request] ' + str(error)
+        except (ConnectionError, RequestException, Timeout):
+            return False, '[Request] Parsing web page error'
 
         # check response
         if response.status_code == requests.codes.OK:
@@ -115,5 +115,5 @@ class Parser(ProxyParser):
         selenium_parser = SeleniumParser(proxy=self.proxy, timeout=self.timeout)
         try:
             return True, selenium_parser.get_html(self.url)
-        except Exception as error:
-            return False, '[Selenium] ' + str(error)
+        except Exception:
+            return False, '[Selenium] Parsing web page error'

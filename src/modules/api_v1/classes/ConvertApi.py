@@ -25,9 +25,8 @@ class ConvertApi(Resource):
         try:
             result.metadata, result.content = extract_content_from_html(args.text, False)
             result.content = convertor.convert(result.content)
-            print(result.content)
             result.success = True
-        except Exception as error:
-            result.error = str(error)
+        except Exception:
+            result.error = 'Cannot convert text from xml to md'
 
         return result

@@ -21,6 +21,8 @@ def api_result(function):
             if isinstance(result, BaseResult):
                 if result.success:
                     return {'status': 'success', 'result': result.content}
+                elif not result.content:
+                    return {'status': 'error', 'message': 'No content found on the page'}
                 else:
                     return {'status': 'error', 'message': result.error}
         except Exception as error:
